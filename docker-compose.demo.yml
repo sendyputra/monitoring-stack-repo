@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  demo-app:
+    build:
+      context: ./demo-app
+    container_name: demo_app
+    restart: unless-stopped
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317
+      - OTEL_SERVICE_NAME=demo-app
+      - PYROSCOPE_SERVER_ADDRESS=http://pyroscope:4040
+      - PYROSCOPE_ENV=demo
+    depends_on:
+      - alloy
+      - pyroscope
+    ports:
+      - "18000:8000"
+    networks:
+      - monitoring
+
+  demo-load:
+    image: curlimages/curl:8.10.1
+    container_name: demo_load
+    restart: unless-stopped
+    depends_on:
+      - demo-app
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      while true; do
+        curl -sf http://demo-app:8000/ >/dev/null &&
+        curl -sf http://demo-app:8000/error >/dev/null 2>&1;
+        sleep 1;
+      done
+    networks:
+      - monitoring
+
+  pyroscope-load:
+    image: python:3.11-slim
+    container_name: pyroscope_load
+    restart: unless-stopped
+    depends_on:
+      - pyroscope
+    environment:
+      - PYROSCOPE_SERVER=http://pyroscope:4040
+      - PYROSCOPE_APP=demo.python.worker
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      pip install --no-cache-dir pyroscope-io==0.8.11 &&
+      python -c "import math,time,random;
+from pyroscope import configure, tag_wrapper;
+configure(application_name='${PYROSCOPE_APP}', server_address='${PYROSCOPE_SERVER}', detect_subprocesses=True, tags={'env': 'demo'});
+@tag_wrapper({'worker': 'pi'})
+def compute(n):
+  total = 0.0
+  sign = 1.0
+  for i in range(n):
+    total += sign / (2*i+1)
+    sign *= -1.0
+  return total * 4
+while True:
+  samples = random.randint(15000, 60000)
+  compute(samples)
+  time.sleep(0.5)"
+    networks:
+      - monitoring
