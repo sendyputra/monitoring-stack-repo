@@ -1,4 +1,4 @@
-# Monitoring Stack (Prometheus + Grafana + Loki + Promtail + Node Exporter + cAdvisor)
+# Monitoring Stack (Grafana + Prometheus + Loki + Tempo + Pyroscope + Mimir + Alloy + Beyla)
 
 All-in-one repo to spin up a monitoring & logging stack on Docker.
 Target: Proxmox LXC (unprivileged) running Debian 12 + Docker.
@@ -19,6 +19,11 @@ Services:
 - Prometheus: http://<HOST>:${PROMETHEUS_PORT}
 - Loki: http://<HOST>:${LOKI_PORT}
 - Alertmanager: http://<HOST>:${ALERTMANAGER_PORT}
+- Tempo UI / Trace API: http://<HOST>:${TEMPO_PORT}
+- Pyroscope: http://<HOST>:${PYROSCOPE_PORT}
+- Mimir (Prometheus-compatible API): http://<HOST>:${MIMIR_PORT}
+- Alloy UI & diagnostics: http://<HOST>:${ALLOY_PORT}
+- OTLP ingest: gRPC ${TEMPO_OTLP_GRPC_PORT}, HTTP ${TEMPO_OTLP_HTTP_PORT} (terminates on Alloy)
 
 ## Repo layout
 
@@ -26,10 +31,16 @@ Services:
 - `prometheus/prometheus.yml` — scrape targets + alerting -> Alertmanager
 - `prometheus/alert_rules/*.yml` — example alerting rules
 - `loki/loki-config.yaml` — filesystem backend with boltdb-shipper + compactor retention
-- `promtail/promtail-config.yaml` — ships Docker and system logs to Loki
+- `alloy/config.alloy` — single collector for logs, metrics, traces (OTLP) with remote write to Prometheus & Mimir
+- `tempo/tempo.yaml` — Tempo single-binary config + local filesystem storage
+- `mimir/mimir.yaml` — Grafana Mimir single-binary config + local filesystem storage
+- `pyroscope/config.yaml` — Pyroscope single-binary config + local filesystem storage
+- `beyla/config.yml` — Beyla eBPF auto-instrumentation outputting OTLP to Alloy
 - `grafana/provisioning/*` — auto-provision Prometheus & Loki datasources and dashboards
 - `alertmanager/alertmanager.yml` — minimal route/receiver (extend as needed)
 - `scripts/deploy_stack.sh` — SSH deploy helper
+
+> **Note:** The legacy `promtail/promtail-config.yaml` is kept for reference but the stack now uses Alloy for log shipping.
 
 ## Remote management (Komodo / CI)
 
@@ -40,7 +51,7 @@ If you *must* enable TCP API, use TLS on port 2376 and firewall it strictly.
 
 ## Security notes
 - Docker Remote API: use SSH or TLS; avoid 0.0.0.0:2375
-- Limit who can reach Grafana/Prometheus/Loki ports
+- Limit who can reach Grafana/Prometheus/Loki/Tempo/Pyroscope/Alloy ports
+- Secure OTLP ports if ingesting telemetry from remote hosts
 - Change default Grafana admin password in `.env`
-- Tune Loki retention in `.env` and `loki-config.yaml`
-
+- Tune Loki retention in `.env` and `loki-config.yaml`; adjust Tempo/Pyroscope retention and Mimir limits in their configs as needed
