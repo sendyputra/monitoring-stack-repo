@@ -1,0 +1,306 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+server {
+  http_listen_address = "0.0.0.0"
+  http_listen_port    = 12345
+}
+
+prometheus.remote_write "prometheus" {
+  wal {
+    max_keepalive_time = "10m"
+    min_keepalive_time = "5m"
+    truncate_frequency = "5m"
+  }
+  endpoint {
+    url                 = "http://prometheus:9090/api/v1/write"
+    send_exemplars      = true
+    send_native_histograms = true
+    remote_timeout      = "10s"
+  }
+}
+
+prometheus.remote_write "mimir" {
+  wal {
+    max_keepalive_time = "10m"
+    min_keepalive_time = "5m"
+    truncate_frequency = "5m"
+  }
+  endpoint {
+    url                 = "http://mimir:9009/api/v1/push"
+    send_exemplars      = true
+    send_native_histograms = true
+    remote_timeout      = "10s"
+  }
+}
+
+prometheus.scrape "node_exporter" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "node_exporter:9100",
+      "job"         = "node_exporter"
+    },
+  ]
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "cadvisor" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "cadvisor:8080",
+      "job"         = "cadvisor"
+    },
+  ]
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "prometheus" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "prometheus:9090",
+      "job"         = "prometheus"
+    },
+  ]
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "alertmanager" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "alertmanager:9093",
+      "job"         = "alertmanager"
+    },
+  ]
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "loki" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "loki:3100",
+      "job"         = "loki"
+    },
+  ]
+  metrics_path = "/metrics"
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "grafana" {
+  scrape_interval = "15s"
+  metrics_path    = "/metrics"
+  basic_auth {
+    username = sys.env("GRAFANA_METRICS_USER")
+    password = sys.env("GRAFANA_METRICS_PASS")
+  }
+  targets = [
+    {
+      "__address__" = "grafana:3000",
+      "job"         = "grafana"
+    },
+  ]
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "tempo" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "tempo:3200",
+      "job"         = "tempo"
+    },
+  ]
+  metrics_path = "/metrics"
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "mimir" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "mimir:9009",
+      "job"         = "mimir"
+    },
+  ]
+  metrics_path = "/metrics"
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "pyroscope" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "pyroscope:4040",
+      "job"         = "pyroscope"
+    },
+  ]
+  metrics_path = "/metrics"
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+prometheus.scrape "alloy" {
+  scrape_interval = "15s"
+  targets = [
+    {
+      "__address__" = "alloy:12345",
+      "job"         = "alloy"
+    },
+  ]
+  metrics_path = "/metrics"
+  forward_to = [
+    prometheus.remote_write.prometheus.receiver,
+    prometheus.remote_write.mimir.receiver,
+  ]
+}
+
+loki.write "loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+loki.source.file "varlogs" {
+  labels = {
+    job      = "varlogs"
+    log_type = "system"
+  }
+  positions {
+    filename = "/tmp/varlogs-positions.yaml"
+  }
+  targets = [
+    {
+      "__path__" = "/var/log/**/*.log"
+    },
+  ]
+  forward_to = [loki.write.loki.receiver]
+}
+
+loki.source.file "docker" {
+  labels = {
+    job = "docker"
+  }
+  positions {
+    filename = "/tmp/docker-positions.yaml"
+  }
+  targets = [
+    {
+      "__path__" = "/var/lib/docker/containers/*/*.log"
+    },
+  ]
+  forward_to = [loki.process.docker.receiver]
+}
+
+loki.process "docker" {
+  stage.docker {}
+  forward_to = [loki.write.loki.receiver]
+}
+
+otelcol.receiver.otlp "default" {
+  protocols {
+    grpc {
+      endpoint = "0.0.0.0:4317"
+    }
+    http {
+      endpoint = "0.0.0.0:4318"
+    }
+  }
+  output {
+    metrics = [otelcol.processor.batch.metrics.input]
+    traces  = [otelcol.processor.batch.traces.input]
+    logs    = [otelcol.processor.batch.logs.input]
+  }
+}
+
+otelcol.processor.batch "metrics" {
+  timeout           = "5s"
+  send_batch_max_size = 200
+  send_batch_size   = 100
+  output {
+    metrics = [
+      otelcol.exporter.prometheusremotewrite.prometheus.input,
+      otelcol.exporter.prometheusremotewrite.mimir.input,
+    ]
+  }
+}
+
+otelcol.processor.batch "traces" {
+  timeout           = "5s"
+  send_batch_max_size = 200
+  send_batch_size   = 100
+  output {
+    traces = [
+      otelcol.exporter.otlp.tempo.input,
+    ]
+  }
+}
+
+otelcol.processor.batch "logs" {
+  timeout           = "5s"
+  send_batch_max_size = 200
+  send_batch_size   = 100
+  output {
+    logs = [
+      otelcol.exporter.loki.otel.input,
+    ]
+  }
+}
+
+otelcol.exporter.prometheusremotewrite "prometheus" {
+  endpoint = "http://prometheus:9090/api/v1/write"
+  tls {
+    insecure = true
+  }
+}
+
+otelcol.exporter.prometheusremotewrite "mimir" {
+  endpoint = "http://mimir:9009/api/v1/push"
+  tls {
+    insecure = true
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+otelcol.exporter.loki "otel" {
+  endpoint = "http://loki:3100/loki/api/v1/push"
+}

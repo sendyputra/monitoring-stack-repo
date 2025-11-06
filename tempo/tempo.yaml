@@ -1,0 +1,57 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3200
+  http_listen_address: 0.0.0.0
+  grpc_listen_port: 9095
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  wal:
+    enabled: true
+    dir: /var/tempo/wal
+
+compactor:
+  working_directory: /var/tempo/compactor
+  compaction:
+    block_retention: 168h
+
+metrics_generator:
+  processor:
+    service_graphs:
+      wait: 5s
+      max_items: 100000
+    span_metrics:
+      dimensions:
+        - service.name
+        - span.name
+  storage:
+    path: /var/tempo/generator
+
+querier:
+  max_concurrent_queries: 4
+
+query_frontend:
+  search:
+    default_result_limit: 20
+    max_duration: 4h
+
+storage:
+  trace:
+    backend: filesystem
+    filesystem:
+      dir: /var/tempo/traces

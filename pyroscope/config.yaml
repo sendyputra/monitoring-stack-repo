@@ -1,0 +1,27 @@
+server:
+  log_level: info
+  http_listen_port: 4040
+  grpc_listen_port: 0
+
+storage:
+  backend: filesystem
+  filesystem:
+    data_dir: /var/lib/pyroscope/data
+
+analytics:
+  enabled: false
+
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  wal:
+    enabled: true
+    dir: /var/lib/pyroscope/wal

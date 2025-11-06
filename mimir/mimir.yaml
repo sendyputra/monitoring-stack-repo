@@ -1,0 +1,54 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 9009
+
+common:
+  path_prefix: /mimir
+  storage:
+    backend: filesystem
+    filesystem:
+      dir: /mimir/storage
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+memberlist:
+  join_members: []
+
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /mimir/blocks
+  bucket_store:
+    sync_dir: /mimir/boltdb-cache
+
+ruler_storage:
+  backend: filesystem
+  filesystem:
+    dir: /mimir/rules
+
+ruler:
+  alertmanager_url: http://alertmanager:9093
+
+alertmanager:
+  enable_api: true
+
+ingester:
+  lifecycler:
+    ring:
+      replication_factor: 1
+  wal:
+    enabled: true
+    dir: /mimir/wal
+
+runtime_config:
+  file: ""
+
+limits_config:
+  max_global_series_per_user: 0
+  max_series_per_user: 0
+  reject_old_samples: true
+  reject_old_samples_max_age: 120h
