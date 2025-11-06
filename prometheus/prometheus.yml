@@ -10,6 +10,11 @@ alerting:
 rule_files:
   - /etc/prometheus/alert_rules/*.yml
 
+remote_write:
+  - url: http://mimir:9009/api/v1/push
+    send_exemplars: true
+    send_native_histograms: true
+
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
@@ -27,3 +32,28 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ['loki:3100']
+
+  - job_name: 'alertmanager'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['alertmanager:9093']
+
+  - job_name: 'tempo'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['tempo:3200']
+
+  - job_name: 'mimir'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['mimir:9009']
+
+  - job_name: 'pyroscope'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['pyroscope:4040']
+
+  - job_name: 'alloy'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['alloy:12345']
