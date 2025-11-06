@@ -24,6 +24,7 @@ Services:
 - Mimir (Prometheus-compatible API): http://<HOST>:${MIMIR_PORT}
 - Alloy UI & diagnostics: http://<HOST>:${ALLOY_PORT}
 - OTLP ingest: gRPC ${TEMPO_OTLP_GRPC_PORT}, HTTP ${TEMPO_OTLP_HTTP_PORT} (terminates on Alloy)
+- Demo service (optional overlay): http://<HOST>:18000
 
 ## Repo layout
 
@@ -41,6 +42,29 @@ Services:
 - `scripts/deploy_stack.sh` — SSH deploy helper
 
 > **Note:** The legacy `promtail/promtail-config.yaml` is kept for reference but the stack now uses Alloy for log shipping.
+
+## Local smoke test (optional)
+
+Spin up data generators before deploying to Proxmox:
+
+```bash
+# Build the demo app image once
+docker compose -f docker-compose.yml -f docker-compose.demo.yml build demo-app
+
+# Start the full stack plus demo generators
+docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
+```
+
+Included demo components (`docker-compose.demo.yml`):
+- `demo-app` — Flask service instrumented with OpenTelemetry + Pyroscope (exposed on port 18000)
+- `demo-load` — simple curl loop generating success/errors against `demo-app`
+- `pyroscope-load` — CPU-burning worker pushing continuous profiles to Pyroscope
+
+Grafana dashboards should populate within ~1 minute; Pyroscope and Tempo will display synthetic profiles and traces. Tear down with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.demo.yml down
+```
 
 ## Remote management (Komodo / CI)
 

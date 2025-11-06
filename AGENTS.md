@@ -15,6 +15,7 @@
 - Respect existing `.env` defaults—document new variables in `README.md` instead of committing secrets.
 - Prefer configuring services through tracked files rather than inline Docker commands.
 - When adding telemetry targets, remember to update both Prometheus and Grafana provisioning.
+- Optional local smoke test lives in `docker-compose.demo.yml`. Build the demo app (`docker compose -f docker-compose.yml -f docker-compose.demo.yml build demo-app`) before running the overlay.
 
 ## Validation
 - Run `docker compose config` after editing Compose or environment files to catch syntax issues.
