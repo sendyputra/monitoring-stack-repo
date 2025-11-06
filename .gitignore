@@ -1,0 +1,7 @@
+# docker
+grafana_data/
+loki_data/
+prometheus_data/
+*/__pycache__/
+.DS_Store
+.env

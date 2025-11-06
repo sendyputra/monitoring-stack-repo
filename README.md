@@ -1,0 +1,46 @@
+# Monitoring Stack (Prometheus + Grafana + Loki + Promtail + Node Exporter + cAdvisor)
+
+All-in-one repo to spin up a monitoring & logging stack on Docker.
+Target: Proxmox LXC (unprivileged) running Debian 12 + Docker.
+
+## Quickstart
+
+```bash
+# 1) Copy repo to your LXC host (monstack), then:
+cp .env.example .env 2>/dev/null || true    # if you keep an example
+# Edit .env and set GRAFANA_ADMIN_PASSWORD
+
+docker compose pull
+docker compose up -d
+```
+
+Services:
+- Grafana: http://<HOST>:${GRAFANA_PORT}
+- Prometheus: http://<HOST>:${PROMETHEUS_PORT}
+- Loki: http://<HOST>:${LOKI_PORT}
+- Alertmanager: http://<HOST>:${ALERTMANAGER_PORT}
+
+## Repo layout
+
+- `docker-compose.yml` — all services
+- `prometheus/prometheus.yml` — scrape targets + alerting -> Alertmanager
+- `prometheus/alert_rules/*.yml` — example alerting rules
+- `loki/loki-config.yaml` — filesystem backend with boltdb-shipper + compactor retention
+- `promtail/promtail-config.yaml` — ships Docker and system logs to Loki
+- `grafana/provisioning/*` — auto-provision Prometheus & Loki datasources and dashboards
+- `alertmanager/alertmanager.yml` — minimal route/receiver (extend as needed)
+- `scripts/deploy_stack.sh` — SSH deploy helper
+
+## Remote management (Komodo / CI)
+
+Prefer **SSH context** for remote Docker access instead of exposing `0.0.0.0:2375`.
+Example: `DOCKER_HOST=ssh://user@monstack docker compose up -d`.
+
+If you *must* enable TCP API, use TLS on port 2376 and firewall it strictly.
+
+## Security notes
+- Docker Remote API: use SSH or TLS; avoid 0.0.0.0:2375
+- Limit who can reach Grafana/Prometheus/Loki ports
+- Change default Grafana admin password in `.env`
+- Tune Loki retention in `.env` and `loki-config.yaml`
+

@@ -1,0 +1,11 @@
+groups:
+  - name: basic-host-alerts
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes."
