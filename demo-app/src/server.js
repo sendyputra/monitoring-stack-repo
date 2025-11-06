@@ -271,7 +271,7 @@ app.post('/jobs', async (req, res, next) => {
     const job = await jobQueue.add(task, payload, {
       attempts: 2,
       backoff: { type: 'exponential', delay: 500 },
-      removeOnComplete: true,
+      removeOnComplete: false,
       removeOnFail: false,
     });
 
@@ -371,7 +371,7 @@ async function start() {
             task: 'heartbeat',
             producedAt: new Date().toISOString(),
           },
-          { removeOnComplete: true, attempts: 1 },
+          { removeOnComplete: false, attempts: 1 },
         )
         .catch((err) => baseLogger.warn({ err }, 'Unable to enqueue heartbeat'));
     }, jobIntervalMs).unref();

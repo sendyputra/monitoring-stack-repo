@@ -2,7 +2,9 @@
 
 const { diag, DiagConsoleLogger, DiagLogLevel } = require('@opentelemetry/api');
 const { NodeSDK } = require('@opentelemetry/sdk-node');
-const { OTLPTraceExporter, OTLPMetricExporter, OTLPLogExporter } = require('@opentelemetry/exporter-otlp-grpc');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-grpc');
+const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-grpc');
+const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-grpc');
 const { BatchLogRecordProcessor } = require('@opentelemetry/sdk-logs');
 const { PeriodicExportingMetricReader } = require('@opentelemetry/sdk-metrics');
 const { Resource } = require('@opentelemetry/resources');
@@ -44,9 +46,6 @@ const sdk = new NodeSDK({
       '@opentelemetry/instrumentation-redis': {
         enabled: true,
       },
-      '@opentelemetry/instrumentation-bullmq': {
-        enabled: true,
-      },
       '@opentelemetry/instrumentation-mongodb': {
         enabled: true,
       },
@@ -63,14 +62,17 @@ const sdk = new NodeSDK({
   ],
 });
 
-sdk
-  .start()
-  .then(() => {
-    diag.debug('OpenTelemetry SDK started');
-  })
-  .catch((error) => {
-    console.error('Error starting OpenTelemetry SDK', error);
-  });
+try {
+  Promise.resolve(sdk.start())
+    .then(() => {
+      diag.debug('OpenTelemetry SDK started');
+    })
+    .catch((error) => {
+      console.error('Error starting OpenTelemetry SDK', error);
+    });
+} catch (error) {
+  console.error('Error starting OpenTelemetry SDK', error);
+}
 
 process.on('SIGTERM', () => {
   sdk

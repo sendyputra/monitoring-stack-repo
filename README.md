@@ -55,9 +55,12 @@ docker compose -f docker-compose.yml -f docker-compose.demo.yml build demo-app
 docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
 
 # Optional: run targeted smoke scenario (ensure stack is up)
-docker compose -f docker-compose.yml -f docker-compose.demo.yml run --rm demo-app npm run simulate
+docker compose -f docker-compose.yml -f docker-compose.demo.yml run --rm \
+  -e DEMO_SMOKE_ITERATIONS=30 \
+  demo-app npm run simulate
 # Or from host with services exposed locally:
-#   DEMO_BASE_URL=http://localhost:18000 npm --prefix demo-app run simulate
+#   DEMO_BASE_URL=http://localhost:18000 DEMO_SMOKE_ITERATIONS=30 npm --prefix demo-app run simulate
+#   # Optional tunables: DEMO_SMOKE_PAUSE_MS, DEMO_JOB_TIMEOUT_MS
 ```
 
 Included demo components (`docker-compose.demo.yml`):

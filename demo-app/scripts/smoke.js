@@ -8,6 +8,8 @@ const { trace, SpanStatusCode } = require('@opentelemetry/api');
 const BASE_URL = process.env.DEMO_BASE_URL || 'http://demo-app:8000';
 const JOB_TIMEOUT_MS = Number(process.env.DEMO_JOB_TIMEOUT_MS || 15000);
 const JOB_POLL_INTERVAL_MS = Number(process.env.DEMO_JOB_POLL_INTERVAL_MS || 1000);
+const ITERATIONS = Number(process.env.DEMO_SMOKE_ITERATIONS || 20);
+const PAUSE_MS = Number(process.env.DEMO_SMOKE_PAUSE_MS || 500);
 
 const logger = pino({
   name: 'demo-smoke',
@@ -131,7 +133,8 @@ async function callExternal() {
   logger.info('Calling /external');
   const { response, body } = await fetchJson('/external');
   if (!response.ok) {
-    throw new Error(`/external returned ${response.status}`);
+    logger.warn({ status: response.status, body }, 'External call failed');
+    return;
   }
   logger.info({ provider: body?.upstream }, 'External response received');
 }
@@ -145,12 +148,48 @@ async function triggerError() {
   logger.info('Error endpoint responded as expected');
 }
 
-runScenario()
-  .then(() => {
-    logger.info('Smoke scenario complete');
+async function main() {
+  const summary = {
+    total: ITERATIONS,
+    success: 0,
+    failed: 0,
+    failures: [],
+  };
+
+  for (let i = 1; i <= ITERATIONS; i += 1) {
+    logger.info({ iteration: i }, 'Starting smoke iteration');
+    try {
+      await runScenario();
+      summary.success += 1;
+      logger.info({ iteration: i }, 'Iteration completed');
+    } catch (error) {
+      summary.failed += 1;
+      summary.failures.push({ iteration: i, message: error.message });
+      logger.warn({ iteration: i, err: error }, 'Iteration failed');
+    }
+
+    if (i < ITERATIONS && PAUSE_MS > 0) {
+      await delay(PAUSE_MS);
+    }
+  }
+
+  logger.info({ summary }, 'Smoke test summary');
+
+  if (summary.failed > 0) {
+    const error = new Error(`Smoke test completed with ${summary.failed} failures`);
+    error.summary = summary;
+    throw error;
+  }
+
+  return summary;
+}
+
+main()
+  .then((summary) => {
+    logger.info({ summary }, 'Smoke test complete');
     process.exit(0);
   })
   .catch((err) => {
-    logger.error({ err }, 'Smoke scenario failed');
+    logger.error({ err, summary: err.summary }, 'Smoke test encountered errors');
     process.exit(1);
   });

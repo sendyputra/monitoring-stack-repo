@@ -57,20 +57,20 @@ services:
     command: >
       pip install --no-cache-dir pyroscope-io==0.8.11 &&
       python -c "import math,time,random;
-from pyroscope import configure, tag_wrapper;
-configure(application_name='${PYROSCOPE_APP}', server_address='${PYROSCOPE_SERVER}', detect_subprocesses=True, tags={'env': 'demo'});
-@tag_wrapper({'worker': 'pi'})
-def compute(n):
-  total = 0.0
-  sign = 1.0
-  for i in range(n):
-    total += sign / (2*i+1)
-    sign *= -1.0
-  return total * 4
-while True:
-  samples = random.randint(15000, 60000)
-  compute(samples)
-  time.sleep(0.5)"
+        from pyroscope import configure, tag_wrapper;
+        configure(application_name='${PYROSCOPE_APP}', server_address='${PYROSCOPE_SERVER}', detect_subprocesses=True, tags={'env': 'demo'});
+        @tag_wrapper({'worker': 'pi'})
+        def compute(n):
+            total = 0.0
+            sign = 1.0
+            for i in range(n):
+                total += sign / (2*i+1)
+                sign *= -1.0
+            return total * 4
+        while True:
+            samples = random.randint(15000, 60000)
+            compute(samples)
+            time.sleep(0.5)"
     networks:
       - monitoring
 
