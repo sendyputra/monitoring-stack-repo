@@ -1,23 +1,23 @@
-FROM python:3.11-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY package.json ./
+RUN npm install --omit=dev
 
-COPY app.py .
+COPY otel.js ./otel.js
+COPY src ./src
 
-ENV OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317 \
-    OTEL_EXPORTER_OTLP_PROTOCOL=grpc \
-    OTEL_SERVICE_NAME=demo-app \
-    OTEL_PYTHON_LOG_CORRELATION=true \
-    OTEL_METRIC_EXPORT_INTERVAL=5000 \
-    PYROSCOPE_SERVER_ADDRESS=http://pyroscope:4040 \
-    PYROSCOPE_ENV=local
+ENV NODE_ENV=production \
+    PORT=8000 \
+    LOG_LEVEL=info \
+    OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317 \
+    OTEL_SERVICE_NAME=demo-node-app \
+    DEMO_ENVIRONMENT=local \
+    MONGO_URL=mongodb://mongo:27017 \
+    MONGO_DB_NAME=monitoring_demo \
+    REDIS_URL=redis://redis:6379
 
 EXPOSE 8000
 
-CMD ["python", "app.py"]
+CMD ["npm", "start"]
