@@ -8,6 +8,9 @@ volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+  tempo_data:
+  mimir_data:
+  pyroscope_data:
 
 services:
 
@@ -49,6 +52,11 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+      - --web.enable-remote-write-receiver
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/alert_rules:/etc/prometheus/alert_rules:ro
@@ -82,15 +90,95 @@ services:
     networks:
       - monitoring
 
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
+  mimir:
+    image: grafana/mimir:latest
+    container_name: mimir
     restart: unless-stopped
-    command: -config.file=/etc/promtail/promtail-config.yaml
+    command:
+      - -config.file=/etc/mimir/mimir.yaml
     volumes:
+      - ./mimir/mimir.yaml:/etc/mimir/mimir.yaml:ro
+      - mimir_data:/mimir
+    ports:
+      - "${MIMIR_PORT}:9009"
+    networks:
+      - monitoring
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/tempo/tempo.yaml
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "${TEMPO_PORT}:3200"
+      - "${TEMPO_OTLP_GRPC_PORT}:4317"
+      - "${TEMPO_OTLP_HTTP_PORT}:4318"
+    networks:
+      - monitoring
+
+  pyroscope:
+    image: grafana/pyroscope:latest
+    container_name: pyroscope
+    restart: unless-stopped
+    command:
+      - server
+      - -config.file=/etc/pyroscope/config.yaml
+    volumes:
+      - ./pyroscope/config.yaml:/etc/pyroscope/config.yaml:ro
+      - pyroscope_data:/var/lib/pyroscope
+    ports:
+      - "${PYROSCOPE_PORT}:4040"
+    networks:
+      - monitoring
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    restart: unless-stopped
+    command:
+      - run
+      - /etc/alloy/config.alloy
+    depends_on:
+      - prometheus
+      - loki
+      - mimir
+      - tempo
+      - pyroscope
+    environment:
+      - GRAFANA_METRICS_USER=${GRAFANA_ADMIN_USER}
+      - GRAFANA_METRICS_PASS=${GRAFANA_ADMIN_PASSWORD}
+    ports:
+      - "${ALLOY_PORT}:12345"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ./promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring
+
+  beyla:
+    image: grafana/beyla:latest
+    container_name: beyla
+    restart: unless-stopped
+    privileged: true
+    pid: "host"
+    depends_on:
+      - alloy
+    environment:
+      - BEYLA_CONFIG=/etc/beyla/config.yml
+    volumes:
+      - ./beyla/config.yml:/etc/beyla/config.yml:ro
+      - /var/run:/var/run
+      - /sys/kernel/debug:/sys/kernel/debug
+      - /sys/fs/bpf:/sys/fs/bpf
+      - /lib/modules:/lib/modules:ro
+      - /usr/src:/usr/src:ro
+      - /etc:/etc:ro
     networks:
       - monitoring
 
@@ -115,5 +203,8 @@ services:
     depends_on:
       - prometheus
       - loki
+      - mimir
+      - tempo
+      - pyroscope
     networks:
       - monitoring
