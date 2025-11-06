@@ -8,6 +8,7 @@
   - `grafana/provisioning/datasources/datasources.yml` for data sources.
   - `alloy/config.alloy`, `tempo/tempo.yaml`, `mimir/mimir.yaml`, `pyroscope/config.yaml`, and `beyla/config.yml` for observability backends.
 - Legacy Promtail config is kept only as reference; Alloy is the active collector.
+- `demo-app/` contains the Node.js Express/BullMQ demo service used by the local smoke test overlay.
 
 ## Workflow Expectations
 - Keep commits small and focused on one logical change. Use clear, descriptive messages.

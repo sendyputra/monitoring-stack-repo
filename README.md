@@ -56,9 +56,10 @@ docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
 ```
 
 Included demo components (`docker-compose.demo.yml`):
-- `demo-app` — Flask service instrumented with OpenTelemetry + Pyroscope (exposed on port 18000)
-- `demo-load` — simple curl loop generating success/errors against `demo-app`
-- `pyroscope-load` — CPU-burning worker pushing continuous profiles to Pyroscope
+- `demo-app` — Node.js (Express) service with MongoDB + Redis + BullMQ, instrumented for traces, metrics, logs (exposed on port 18000)
+- `demo-load` — curl-based traffic generator hitting the major endpoints (success, cache, job enqueue, error)
+- `pyroscope-load` — CPU-burning worker pushing continuous profiles to Pyroscope (keeps Pyroscope UI populated)
+- `mongo` & `redis` — backing data stores used by the demo service (ephemeral volumes)
 
 Grafana dashboards should populate within ~1 minute; Pyroscope and Tempo will display synthetic profiles and traces. Tear down with:
 
