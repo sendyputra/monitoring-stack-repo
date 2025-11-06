@@ -53,6 +53,11 @@ docker compose -f docker-compose.yml -f docker-compose.demo.yml build demo-app
 
 # Start the full stack plus demo generators
 docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
+
+# Optional: run targeted smoke scenario (ensure stack is up)
+docker compose -f docker-compose.yml -f docker-compose.demo.yml run --rm demo-app npm run simulate
+# Or from host with services exposed locally:
+#   DEMO_BASE_URL=http://localhost:18000 npm --prefix demo-app run simulate
 ```
 
 Included demo components (`docker-compose.demo.yml`):
