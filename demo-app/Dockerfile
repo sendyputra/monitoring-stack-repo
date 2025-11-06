@@ -7,6 +7,7 @@ RUN npm install --omit=dev
 
 COPY otel.js ./otel.js
 COPY src ./src
+COPY scripts ./scripts
 
 ENV NODE_ENV=production \
     PORT=8000 \

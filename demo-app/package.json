@@ -5,7 +5,8 @@
   "description": "Express + BullMQ demo service instrumented for the monitoring stack",
   "main": "src/server.js",
   "scripts": {
-    "start": "node -r ./otel.js src/server.js"
+    "start": "node -r ./otel.js src/server.js",
+    "simulate": "node -r ./otel.js scripts/smoke.js"
   },
   "engines": {
     "node": ">=18"
