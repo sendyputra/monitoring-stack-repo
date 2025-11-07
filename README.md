@@ -25,6 +25,7 @@ Services:
 - OTLP Collector (gRPC ${OTELCOL_OTLP_GRPC_PORT}, HTTP ${OTELCOL_OTLP_HTTP_PORT}, metrics ${OTELCOL_METRICS_PORT})
 - Promtail (container + host logs → Loki)
 - Demo service (optional overlay): http://<HOST>:18000
+- Demo Nginx gateway + exporter (optional overlay): http://<HOST>:${NGINX_PORT:-18080}
 
 ## Repo layout
 
@@ -45,8 +46,18 @@ Services:
 
 ### Grafana dashboards
 
+Core (folder **Root**):
 - **Stack Overview** (`grafana/dashboards/stack-overview.json`) — infrastructure + service SLO view with logs/traces links.
-- **Demo Service Deep Dive** (`grafana/dashboards/demo-service.json`) — queue depth, latency, error insight for the Node.js workload.
+- **Demo Service Deep Dive** (`grafana/dashboards/demo-service.json`) — queue depth, latency, error insight for the Node.js workload (backed by `/metrics` on `demo-app`).
+
+Imported (folder **imported/** — automatically provisioned):
+- **Pino HTTP Logs** (`grafana/dashboards/imported/pino-http-logs.json`, Grafana ID 21900) — live Loki queries over `pino` JSON logs with filters for service / level / status codes.
+- **Node Exporter Full** (`grafana/dashboards/imported/node-exporter-full.json`, ID 1860) — detailed host metrics from `node-exporter` + `cadvisor`.
+- **Loki Stack Monitoring** (`grafana/dashboards/imported/loki-stack-monitoring.json`, ID 14055) — health of Loki + Promtail pipelines.
+- **Redis Exporter** (`grafana/dashboards/imported/redis-dashboard.json`, ID 11835) — Redis cache activity via `redis_exporter`.
+- **MongoDB Overview** (`grafana/dashboards/imported/mongodb-overview.json`, ID 2583) — MongoDB storage + ops from `mongodb-exporter`.
+- **NodeJS Application** (`grafana/dashboards/imported/nodejs-application.json`, ID 11159) — process/runtime stats from Prometheus default metrics (via `prom-client`).
+- **Nginx** (`grafana/dashboards/imported/nginx-metrics.json`, ID 14900) — request/latency metrics from the demo Nginx gateway hitting `demo-app`.
 
 ### Manual verification checklist
 
@@ -67,6 +78,7 @@ Services:
 3. **Grafana UI** — open `http://localhost:${GRAFANA_PORT}` (default `3000`) and check:
    - Dashboard **Stack Overview** shows host CPU/memory, request rate, job depth, logs pane, and Tempo trace search.
    - Dashboard **Demo Service Deep Dive** shows request latency histograms, error counts, job durations, queue states, log stream, and slow traces.
+   - Folder **imported/** contains: Pino HTTP Logs (Loki), Node Exporter Full, Loki Stack Monitoring, Redis, MongoDB, NodeJS Application, and Nginx dashboards — all should show live data once the demo overlay + load generator are running.
 
 4. **Pyroscope UI** — open `http://localhost:${PYROSCOPE_PORT}` (default `4040`) to inspect live flamegraphs from `demo-node-app`.
 
@@ -96,9 +108,12 @@ docker compose -f docker-compose.yml -f docker-compose.demo.yml run --rm \
 
 Included demo components (`docker-compose.demo.yml`):
 - `demo-app` — Node.js (Express) service with MongoDB + Redis + BullMQ, instrumented for traces, metrics, logs (exposed on port 18000)
-- `demo-load` — curl-based traffic generator hitting the major endpoints (success, cache, job enqueue, error)
+- `nginx` + `nginx-exporter` — reverse proxy in front of `demo-app` (port `${NGINX_PORT:-18080}`) with metrics scraped by Prometheus.
+- `redis-exporter` + `mongodb-exporter` — surface storage metrics for Redis/Mongo dashboards.
+- `demo-load` — curl-based traffic generator that now targets `nginx` to exercise proxy + exporter metrics.
 - Pyroscope data is produced directly by `demo-app` via the Pyroscope SDK
 - `mongo` & `redis` — backing data stores used by the demo service (ephemeral volumes)
+- By default `NGINX_PORT` maps to `18080`; override it in `.env` if the port is taken.
 
 Grafana dashboards should populate within ~1 minute; Pyroscope and Tempo will display synthetic profiles and traces. Tear down with:
 
