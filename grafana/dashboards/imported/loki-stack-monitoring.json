@@ -428,7 +428,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(log_messages_total{app_kubernetes_io_name=\"promtail\",level=~\"error|warn\"}[1m])) by (level)\n",
+          "expr": "sum(rate(log_messages_total{level=~\"error|warn\"}[1m])) by (level)\n",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -748,7 +748,7 @@
           "expr": "rate(promtail_dropped_entries_total[1m])*60",
           "instant": false,
           "interval": "",
-          "legendFormat": "pod={{kubernetes_pod_name}}, instance={{instance}}",
+          "legendFormat": "instance={{instance}}",
           "refId": "A"
         }
       ],

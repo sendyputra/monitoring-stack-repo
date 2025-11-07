@@ -121,8 +121,8 @@
             "uid": "LOKI_DS"
           },
           "editorMode": "builder",
-          "expr": "sum(\n    count_over_time(\n        {service=~\"$service\"} \n        |= \"statusCode\"\n        | json\n        [${__range}]\n    )\n)",
-          "legendFormat": "{{res_statusCode}}",
+          "expr": "sum(\n    count_over_time(\n        {service=~\"$service\"} \n        |= \"request completed\"\n        | json\n        | res.statusCode >= 0\n        [${__range}]\n    )\n)",
+          "legendFormat": "Requests",
           "queryType": "range",
           "refId": "A"
         }
@@ -187,8 +187,8 @@
             "uid": "LOKI_DS"
           },
           "editorMode": "code",
-          "expr": "sum(\n    count_over_time(\n        {service=~\"$service\"} \n        |= \"statusCode\"\n        | json\n        | res_statusCode < 400\n        [${__range}]\n    )\n)",
-          "legendFormat": "{{res_statusCode}}",
+          "expr": "sum(\n    count_over_time(\n        {service=~\"$service\"} \n        |= \"request completed\"\n        | json\n        | res.statusCode >= 200 and res.statusCode < 400\n        [${__range}]\n    )\n)",
+          "legendFormat": "2xx",
           "queryType": "range",
           "refId": "A"
         }
@@ -253,8 +253,8 @@
             "uid": "LOKI_DS"
           },
           "editorMode": "code",
-          "expr": "sum(\n    count_over_time(\n        {service=~\"$service\"} \n        |= \"statusCode\"\n        | json\n        | res_statusCode >= 400 and res_statusCode < 500\n        [${__range}]\n    )\n)",
-          "legendFormat": "{{res_statusCode}}",
+          "expr": "sum(\n    count_over_time(\n        {service=~\"$service\"} \n        |= \"request completed\"\n        | json\n        | res.statusCode >= 400 and res.statusCode < 500\n        [${__range}]\n    )\n)",
+          "legendFormat": "4xx",
           "queryType": "range",
           "refId": "A"
         }
@@ -319,8 +319,8 @@
             "uid": "LOKI_DS"
           },
           "editorMode": "code",
-          "expr": "sum(\n    count_over_time(\n        {service=~\"$service\"} \n        |= \"statusCode\"\n        | json\n        | res_statusCode >= 500\n        [${__range}]\n    )\n)",
-          "legendFormat": "{{res_statusCode}}",
+          "expr": "sum(\n    count_over_time(\n        {service=~\"$service\"} \n        |= \"request completed\"\n        | json\n        | res.statusCode >= 500\n        [${__range}]\n    )\n)",
+          "legendFormat": "5xx",
           "queryType": "range",
           "refId": "A"
         }
@@ -462,8 +462,8 @@
             "uid": "LOKI_DS"
           },
           "editorMode": "code",
-          "expr": "count_over_time(\n    {service=~\"$service\"} \n    |= \"statusCode\"\n    | json\n    | keep res_statusCode\n    [1m]\n)",
-          "legendFormat": "{{res_statusCode}}",
+          "expr": "count_over_time(\n    {service=~\"$service\"} \n    |= \"request completed\"\n    | json\n    | label_format status=\"{{res.statusCode}}\"\n    [1m]\n)",
+          "legendFormat": "{{status}}",
           "queryType": "range",
           "refId": "A"
         }
@@ -500,7 +500,7 @@
             "uid": "LOKI_DS"
           },
           "editorMode": "code",
-          "expr": "{service=~\"$service\", level=~\"$level\"}\n| json\n| res_statusCode=~\"$status\"",
+          "expr": "{service=~\"$service\", level=~\"$level\"}\n| json\n| res.statusCode=~\"$status\"",
           "queryType": "range",
           "refId": "A"
         }

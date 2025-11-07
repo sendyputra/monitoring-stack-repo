@@ -7,93 +7,197 @@
   "refresh": "15s",
   "panels": [
     {
+      "id": 1,
       "type": "timeseries",
-      "title": "Latency (s)",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "title": "HTTP Latency (s)",
       "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(demo_http_request_duration_seconds_bucket[5m])) by (le))",
-          "legendFormat": "p95",
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "p95"
         },
         {
           "expr": "histogram_quantile(0.50, sum(rate(demo_http_request_duration_seconds_bucket[5m])) by (le))",
-          "legendFormat": "p50",
-          "refId": "B"
+          "refId": "B",
+          "legendFormat": "p50"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "s", "decimals": 3 }, "overrides": [] }
     },
     {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Request Rate by Route",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (route) (rate(demo_http_requests_total[5m]))",
+          "refId": "A",
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "req/s" }, "overrides": [] }
+    },
+    {
+      "id": 3,
       "type": "timeseries",
       "title": "Errors by Scope",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 },
       "targets": [
         {
           "expr": "sum by (scope) (rate(demo_errors_total[5m]))",
-          "legendFormat": "{{scope}}",
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "{{scope}}"
         }
       ],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+      "fieldConfig": { "defaults": { "unit": "req/s" }, "overrides": [] }
     },
     {
+      "id": 4,
       "type": "timeseries",
-      "title": "Job Duration (ms)",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 7 },
+      "title": "Job Queue Depth",
       "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
-      "targets": [
-        {
-          "expr": "avg by (task) (demo_job_duration_ms)",
-          "legendFormat": "{{task}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] }
-    },
-    {
-      "type": "timeseries",
-      "title": "Queue States",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 7 },
-      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 6 },
       "targets": [
         {
           "expr": "demo_job_queue_size",
-          "legendFormat": "{{state}}",
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "{{state}}"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
     },
     {
-      "type": "logs",
-      "title": "Errors",
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 14 },
-      "datasource": { "type": "loki", "uid": "LOKI_DS" },
+      "id": 5,
+      "type": "timeseries",
+      "title": "Job Duration (ms)",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 6 },
       "targets": [
         {
-          "expr": "{service=\"demo-node-app\", level=~\"(err|error|fatal)\"}",
+          "expr": "avg by (task) (demo_job_duration_ms)",
+          "refId": "A",
+          "legendFormat": "{{task}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Redis Commands / s",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum(rate(redis_commands_processed_total[1m]))",
+          "refId": "A",
+          "legendFormat": "all"
+        },
+        {
+          "expr": "topk(5, rate(redis_commands_duration_seconds_total[1m]))",
+          "refId": "B",
+          "legendFormat": "{{cmd}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "MongoDB Operations",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum by (type) (rate(mongodb_op_counters_total[1m]))",
+          "refId": "A",
+          "legendFormat": "{{type}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Gateway Requests (Nginx)",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 12 },
+      "targets": [
+        {
+          "expr": "rate(nginx_http_requests_total[1m])",
+          "refId": "A",
+          "legendFormat": "req/s"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "req/s", "decimals": 2 }, "overrides": [] }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Node.js Process Memory (MiB)",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 18 },
+      "targets": [
+        {
+          "expr": "demo_process_memory_bytes{type=\"rss\"} / 1024 / 1024",
+          "refId": "A",
+          "legendFormat": "rss"
+        },
+        {
+          "expr": "demo_process_memory_bytes{type=\"heap_used\"} / 1024 / 1024",
+          "refId": "B",
+          "legendFormat": "heap used"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "mbytes" }, "overrides": [] }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Node.js CPU Seconds",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 18 },
+      "targets": [
+        {
+          "expr": "deriv(demo_process_cpu_user_seconds[5m]) * 100",
+          "refId": "A",
+          "legendFormat": "user"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 2 }, "overrides": [] }
+    },
+    {
+      "id": 11,
+      "type": "logs",
+      "title": "Pino HTTP Logs",
+      "datasource": { "type": "loki", "uid": "LOKI_DS" },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "expr": "{service=~\"demo-node-app\"} |= \"request completed\"",
           "refId": "A"
         }
       ]
     },
     {
+      "id": 12,
       "type": "trace",
-      "title": "Slow Traces",
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 14 },
+      "title": "Tempo Traces",
       "datasource": { "type": "tempo", "uid": "TEMPO_DS" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 24 },
       "targets": [
         {
           "queryType": "traceSearch",
-          "refId": "A",
-          "query": "{\"service.name\":\"demo-node-app\",\"durationMs\":\">300\"}"
+          "query": "{\"service.name\":\"demo-node-app\"}",
+          "refId": "A"
         }
       ]
     }
   ],
-  "templating": {
-    "list": []
-  }
+  "templating": { "list": [] }
 }

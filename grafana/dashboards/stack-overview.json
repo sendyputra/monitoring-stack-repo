@@ -5,127 +5,124 @@
   "schemaVersion": 39,
   "version": 1,
   "refresh": "30s",
-  "style": "dark",
-  "timezone": "browser",
   "panels": [
     {
+      "id": 1,
       "type": "timeseries",
       "title": "Host CPU Usage (%)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
           "expr": "avg by (instance) ((1 - avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m]))) * 100)",
-          "legendFormat": "{{instance}}",
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "{{instance}}"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 }, "overrides": [] }
     },
     {
+      "id": 2,
       "type": "timeseries",
       "title": "Host Memory Available (%)",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
           "expr": "avg by (instance) (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100)",
-          "legendFormat": "{{instance}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 }, "overrides": [] }
-    },
-    {
-      "type": "timeseries",
-      "title": "Demo Service Request Rate",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
-      "targets": [
-        {
-          "expr": "sum by (route) (rate(demo_http_requests_total[5m]))",
-          "legendFormat": "{{route}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
-    },
-    {
-      "type": "timeseries",
-      "title": "BullMQ Depth",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
-      "targets": [
-        {
-          "expr": "demo_job_queue_size",
-          "legendFormat": "{{state}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
-    },
-    {
-      "type": "stat",
-      "title": "HTTP Success %",
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
-      "targets": [
-        {
-          "expr": "sum(rate(demo_http_requests_total{status_code!~\"5..\"}[5m])) / sum(rate(demo_http_requests_total[5m])) * 100",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 }, "overrides": [] }
-    },
-    {
-      "type": "stat",
-      "title": "Job Failures / min",
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
-      "targets": [
-        {
-          "expr": "sum(rate(demo_errors_total{scope=\"worker\"}[5m])) * 60",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": { "defaults": { "unit": "short", "decimals": 2 }, "overrides": [] }
-    },
-    {
-      "type": "logs",
-      "title": "Demo Service Logs",
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 16 },
-      "datasource": { "type": "loki", "uid": "LOKI_DS" },
-      "targets": [
-        {
-          "expr": "{service=\"demo-node-app\"}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "trace",
-      "title": "Recent Traces",
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 22 },
-      "datasource": { "type": "tempo", "uid": "TEMPO_DS" },
-      "targets": [
-        {
-          "queryType": "traceSearch",
           "refId": "A",
-          "query": "{\"service.name\":\"demo-node-app\"}"
+          "legendFormat": "{{instance}}"
         }
-      ]
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 }, "overrides": [] }
     },
     {
-      "type": "text",
-      "title": "Pyroscope",
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 26 },
-      "options": {
-        "mode": "markdown",
-        "content": "View flamegraphs in [Pyroscope](http://pyroscope:4040)."
-      }
+      "id": 3,
+      "type": "timeseries",
+      "title": "Core Services Up",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 7 },
+      "targets": [
+        {
+          "expr": "up{job=~\"prometheus|loki|tempo|mimir|pyroscope|grafana|otel_collector|alertmanager\"}",
+          "refId": "A",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Targets Down",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 7 },
+      "targets": [
+        {
+          "expr": "count(up{job=~\"prometheus|loki|tempo|mimir|pyroscope|grafana|otel_collector|alertmanager\"} == 0)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Container CPU %",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "sum by (container) (rate(container_cpu_usage_seconds_total{container=~\"grafana|prometheus|loki|tempo|pyroscope|mimir|otel_collector|alertmanager\"}[1m])) * 100",
+          "refId": "A",
+          "legendFormat": "{{container}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 2 }, "overrides": [] }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Container Memory (MiB)",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "targets": [
+        {
+          "expr": "container_memory_usage_bytes{container=~\"grafana|prometheus|loki|tempo|pyroscope|mimir|otel_collector|alertmanager\"} / 1024 / 1024",
+          "refId": "A",
+          "legendFormat": "{{container}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "mbytes", "decimals": 1 }, "overrides": [] }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Alerts Firing",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "expr": "count(ALERTS{alertstate=\"firing\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] }
+    },
+    {
+      "id": 8,
+      "type": "logs",
+      "title": "Stack Logs",
+      "datasource": { "type": "loki", "uid": "LOKI_DS" },
+      "gridPos": { "h": 12, "w": 18, "x": 6, "y": 22 },
+      "targets": [
+        {
+          "expr": "{job=~\"grafana|prometheus|loki|tempo|pyroscope|mimir|otel_collector|promtail\"}",
+          "refId": "A"
+        }
+      ]
     }
   ],
-  "templating": {
-    "list": []
-  }
+  "templating": { "list": [] }
 }
