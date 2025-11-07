@@ -42,8 +42,7 @@ Services:
 - `alertmanager/alertmanager.yml` — minimal route/receiver (extend as needed)
 - `scripts/deploy_stack.sh` — SSH deploy helper
 - `mongo-exporter/` — lightweight MongoDB → Prometheus exporter used by the demo overlay
-- `telegraf/telegraf.conf` — Telegraf collector (nginx stub_status + host stats for the Grafana Nginx board)
-- `nginx-log-exporter/` — Node-based exporter that tails the nginx access log and publishes `nginxlog_resp_bytes`
+- `telegraf/telegraf.conf` — Telegraf collector (nginx stub_status + host stats + access log tail for the Grafana Nginx board)
 - `TODO.md` — live checklist/report for the actively requested fixes (linked from AGENTS.md)
 
 > **Note:** Promtail now ships system & container logs directly to Loki; application telemetry uses the OpenTelemetry Collector.
@@ -113,8 +112,7 @@ Included demo components (`docker-compose.demo.yml`):
 - `demo-app` — Node.js (Express) service with MongoDB + Redis + BullMQ, instrumented for traces, metrics, logs (exposed on port 18000)
 - `nginx` + `nginx-exporter` — reverse proxy in front of `demo-app` (port `${NGINX_PORT:-18080}`) with metrics scraped by Prometheus.
 - `redis-exporter` + `mongodb-exporter` — Redis exporter plus the custom Node-based Mongo Prometheus bridge in `mongo-exporter/`.
-- `telegraf_nginx` — Telegraf agent collecting nginx stub_status + system metrics (feeds the imported Nginx dashboard).
-- `nginx-log-exporter` — tails `/var/log/nginx/proxy_access.log` and emits the `nginxlog_resp_bytes` counter so “Each Request Detail” panels work.
+- `telegraf_nginx` — Telegraf agent collecting nginx stub_status, host metrics, dan tail access log (`nginxlog_resp_bytes`) sehingga dashboard Nginx terisi penuh.
 - `demo-load` — curl-based traffic generator that now targets `nginx` to exercise proxy + exporter metrics.
 - Pyroscope data is produced directly by `demo-app` via the Pyroscope SDK
 - `mongo` & `redis` — backing data stores used by the demo service (ephemeral volumes)
@@ -125,6 +123,42 @@ Grafana dashboards should populate within ~1 minute; Pyroscope and Tempo will di
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.demo.yml down
 ```
+
+## Production: NPMplus + Telegraf
+
+Saat reverse proxy kamu jalan di server terpisah (misalnya NPMplus), jalankan Telegraf di sana agar dashboard Nginx (ID 14900) tetap memiliki data lengkap, dan buat proxy host yang meneruskan trafik ke demo stack.
+
+1. **Tambahkan Proxy Host di NPMplus**
+   - Dashboard NPMplus → *Proxy Hosts* → *Add Proxy Host*.
+   - Domain: `demo.example.com` (atau domain kamu).
+   - Scheme: `http`.
+   - Forward Hostname/IP: alamat host tempat stack ini berjalan.
+   - Forward Port: `${NGINX_PORT:-18080}` (atau langsung `18000` kalau ingin bypass nginx demo).
+   - Aktifkan `Cache Assets` dan `Block Common Exploits` sesuai kebutuhan, simpan.
+
+2. **Deploy Telegraf di server NPMplus**
+   - Salin `telegraf/npmplus-telegraf.conf` dari repo ini dan edit bagian berikut:
+     - `urls` pada `[[inputs.nginx]]` menyesuaikan endpoint `nginx_status` NPMplus (default `http://127.0.0.1/nginx_status`).
+     - `files` pada `[[inputs.tail]]` mengarah ke log akses NPMplus (`/data/logs/proxy_host-*.log`).
+   - Jalankan Telegraf (contoh docker):
+     ```bash
+     docker run -d --name telegraf-npmplus --restart unless-stopped \
+       -v /data/logs:/data/logs:ro \
+       -v $(pwd)/telegraf/npmplus-telegraf.conf:/etc/telegraf/telegraf.conf:ro \
+       -p 9273:9273 \
+       telegraf:1.30
+     ```
+     Port 9273 diekspos agar Prometheus pada stack ini bisa melakukan scrape.
+
+3. **Tambahkan target scrape di Prometheus lokal**
+   ```yaml
+   - job_name: 'npmplus_telegraf'
+     static_configs:
+       - targets: ['<IP_NPMPLUS>:9273']
+   ```
+   Reload Prometheus (`curl -XPOST http://localhost:9090/-/reload`). Sekarang panel "Each Request Detail" akan berisi kolom `agent`, `client_ip`, `request`, dsb. karena Telegraf tail menambahkan label tersebut.
+
+> **Tip:** buka firewall hanya untuk host monitoring. Bila NPMplus menulis log ke lokasi berbeda, cukup sesuaikan path pada `files = ["/path/to/log*.log"]`.
 
 ## Remote management (Komodo / CI)
 

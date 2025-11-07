@@ -130,23 +130,6 @@ services:
     networks:
       - monitoring
 
-  nginx-log-exporter:
-    build:
-      context: ./nginx-log-exporter
-    container_name: nginx_log_exporter
-    restart: unless-stopped
-    depends_on:
-      - nginx
-    environment:
-      - LOG_FILE=/var/log/nginx/proxy_access.log
-      - INSTANCE_LABEL=nginx
-    volumes:
-      - nginx_logs:/var/log/nginx:ro
-    expose:
-      - "9200"
-    networks:
-      - monitoring
-
 volumes:
   mongo_demo_data:
   nginx_logs:

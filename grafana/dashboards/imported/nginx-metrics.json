@@ -2023,20 +2023,24 @@
   "templating": {
     "list": [
       {
-        "allValue": null,
-        "current": {},
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
           "uid": "PROMETHEUS_DS"
         },
-        "definition": "label_values(system_uptime, instance)",
+        "definition": "label_values({job=~\"telegraf_nginx|nginx_log_exporter\"}, instance)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "instance",
         "multi": true,
         "name": "instance",
         "options": [],
-        "query": "label_values(system_uptime, instance)",
+        "query": "label_values({job=~\"telegraf_nginx|nginx_log_exporter\"}, instance)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

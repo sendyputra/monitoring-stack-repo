@@ -6,5 +6,6 @@ prometheus_data/
 .DS_Store
 .env
 demo-app/node_modules/
+nginx-log-exporter/node_modules/
 mongo-exporter/node_modules/
 mongo-exporter/node_modules/
