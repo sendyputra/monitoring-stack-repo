@@ -42,6 +42,8 @@ Services:
 - `alertmanager/alertmanager.yml` — minimal route/receiver (extend as needed)
 - `scripts/deploy_stack.sh` — SSH deploy helper
 - `mongo-exporter/` — lightweight MongoDB → Prometheus exporter used by the demo overlay
+- `telegraf/telegraf.conf` — Telegraf collector (nginx stub_status + host stats for the Grafana Nginx board)
+- `nginx-log-exporter/` — Node-based exporter that tails the nginx access log and publishes `nginxlog_resp_bytes`
 - `TODO.md` — live checklist/report for the actively requested fixes (linked from AGENTS.md)
 
 > **Note:** Promtail now ships system & container logs directly to Loki; application telemetry uses the OpenTelemetry Collector.
@@ -111,6 +113,8 @@ Included demo components (`docker-compose.demo.yml`):
 - `demo-app` — Node.js (Express) service with MongoDB + Redis + BullMQ, instrumented for traces, metrics, logs (exposed on port 18000)
 - `nginx` + `nginx-exporter` — reverse proxy in front of `demo-app` (port `${NGINX_PORT:-18080}`) with metrics scraped by Prometheus.
 - `redis-exporter` + `mongodb-exporter` — Redis exporter plus the custom Node-based Mongo Prometheus bridge in `mongo-exporter/`.
+- `telegraf_nginx` — Telegraf agent collecting nginx stub_status + system metrics (feeds the imported Nginx dashboard).
+- `nginx-log-exporter` — tails `/var/log/nginx/proxy_access.log` and emits the `nginxlog_resp_bytes` counter so “Each Request Detail” panels work.
 - `demo-load` — curl-based traffic generator that now targets `nginx` to exercise proxy + exporter metrics.
 - Pyroscope data is produced directly by `demo-app` via the Pyroscope SDK
 - `mongo` & `redis` — backing data stores used by the demo service (ephemeral volumes)
