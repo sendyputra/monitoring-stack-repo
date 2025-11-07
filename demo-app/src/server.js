@@ -9,6 +9,7 @@ const IORedis = require('ioredis');
 const os = require('os');
 const process = require('process');
 const { metrics, trace, context, SpanStatusCode } = require('@opentelemetry/api');
+const client = require('prom-client');
 
 const PORT = Number(process.env.PORT || 8000);
 const HOSTNAME = os.hostname();
@@ -27,6 +28,32 @@ const baseLogger = pino({
 
 const tracer = trace.getTracer('demo-node-app');
 const meter = metrics.getMeter('demo-node-app');
+
+const promRegistry = new client.Registry();
+client.collectDefaultMetrics({
+  register: promRegistry,
+});
+
+const httpLatencyHistogram = new client.Histogram({
+  name: 'demo_http_request_duration_seconds',
+  help: 'HTTP request latency',
+  labelNames: ['method', 'route', 'status_code'],
+  registers: [promRegistry],
+});
+
+const jobDurationHistogram = new client.Histogram({
+  name: 'demo_job_processing_seconds',
+  help: 'BullMQ job processing duration',
+  labelNames: ['task', 'state'],
+  registers: [promRegistry],
+});
+
+const jobQueueGauge = new client.Gauge({
+  name: 'demo_job_queue_size',
+  help: 'BullMQ queue depth',
+  labelNames: ['state'],
+  registers: [promRegistry],
+});
 
 const requestCounter = meter.createCounter('demo_http_requests_total', {
   description: 'Total HTTP requests handled by demo service',
@@ -83,14 +110,19 @@ app.use(
 
 app.use((req, res, next) => {
   const start = Date.now();
+  const route = req.route?.path || req.originalUrl || 'unknown';
+  const stopTimer = httpLatencyHistogram.startTimer({
+    method: req.method,
+    route,
+  });
   res.on('finish', () => {
-    const route = req.route?.path || req.originalUrl || 'unknown';
     requestCounter.add(1, {
       method: req.method,
       route,
       status_code: res.statusCode,
     });
     const duration = Date.now() - start;
+    stopTimer({ status_code: res.statusCode });
     req.log.debug({ route, duration }, 'request completed');
   });
   next();
@@ -153,6 +185,7 @@ async function initialiseDataStores() {
             task,
             state: 'completed',
           });
+          jobDurationHistogram.observe(elapsedMs / 1000, { task, state: 'completed' });
           jobCounter.add(1, { task, state: 'completed' });
           span.setAttribute('demo.job.duration_ms', elapsedMs);
           span.setStatus({ code: SpanStatusCode.OK });
@@ -163,7 +196,9 @@ async function initialiseDataStores() {
           span.recordException(err);
           span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
           span.end();
-          jobCounter.add(1, { task: job.data?.task || 'default', state: 'failed' });
+          const task = job.data?.task || 'default';
+          jobCounter.add(1, { task, state: 'failed' });
+          jobDurationHistogram.observe(0, { task, state: 'failed' });
           throw err;
         });
     },
@@ -182,18 +217,17 @@ async function initialiseDataStores() {
     'demo_job_queue_depth',
     { description: 'BullMQ queue size segmented by state' },
     (observableResult) => {
-      jobQueue
-        .getWaitingCount()
-        .then((count) => observableResult.observe(count, { state: 'waiting' }))
-        .catch((err) => baseLogger.debug({ err }, 'Failed to read waiting count'));
-      jobQueue
-        .getActiveCount()
-        .then((count) => observableResult.observe(count, { state: 'active' }))
-        .catch((err) => baseLogger.debug({ err }, 'Failed to read active count'));
-      jobQueue
-        .getDelayedCount()
-        .then((count) => observableResult.observe(count, { state: 'delayed' }))
-        .catch((err) => baseLogger.debug({ err }, 'Failed to read delayed count'));
+      const observeState = (promise, state) => {
+        promise
+          .then((count) => {
+            observableResult.observe(count, { state });
+            jobQueueGauge.set({ state }, count);
+          })
+          .catch((err) => baseLogger.debug({ err }, `Failed to read ${state} count`));
+      };
+      observeState(jobQueue.getWaitingCount(), 'waiting');
+      observeState(jobQueue.getActiveCount(), 'active');
+      observeState(jobQueue.getDelayedCount(), 'delayed');
     },
   );
 }
@@ -339,6 +373,11 @@ app.get('/healthz', async (req, res) => {
     mongo: mongoClient?.topology?.isConnected() ? 'ready' : 'disconnected',
     redis: redis?.status,
   });
+});
+
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', promRegistry.contentType);
+  res.end(await promRegistry.metrics());
 });
 
 app.use((err, req, res, _next) => {

@@ -27,6 +27,7 @@
     "ioredis": "^5.4.1",
     "mongodb": "^6.6.2",
     "pino": "^8.17.2",
-    "pino-http": "^8.6.1"
+    "pino-http": "^8.6.1",
+    "prom-client": "^15.1.0"
   }
 }

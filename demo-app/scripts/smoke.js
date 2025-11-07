@@ -10,6 +10,7 @@ const JOB_TIMEOUT_MS = Number(process.env.DEMO_JOB_TIMEOUT_MS || 15000);
 const JOB_POLL_INTERVAL_MS = Number(process.env.DEMO_JOB_POLL_INTERVAL_MS || 1000);
 const ITERATIONS = Number(process.env.DEMO_SMOKE_ITERATIONS || 20);
 const PAUSE_MS = Number(process.env.DEMO_SMOKE_PAUSE_MS || 500);
+const ALLOW_JOB_FAILURES = (process.env.DEMO_SMOKE_ALLOW_JOB_FAILURES || 'true').toLowerCase() === 'true';
 
 const logger = pino({
   name: 'demo-smoke',
@@ -120,6 +121,10 @@ async function pollJob(jobId) {
       logger.info({ jobId, state: body.state }, 'Job completed');
       return;
     } else if (body?.state === 'failed') {
+      if (ALLOW_JOB_FAILURES) {
+        logger.warn({ jobId }, 'Job failed (expected); continuing');
+        return;
+      }
       throw new Error(`Job ${jobId} failed`);
     } else {
       logger.debug({ jobId, state: body?.state }, 'Job still in progress');
