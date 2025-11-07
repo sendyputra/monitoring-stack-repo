@@ -26,7 +26,7 @@ datasources:
     access: proxy
     url: http://tempo:3200
   - name: Pyroscope
-    type: pyroscope
+    type: grafana-pyroscope-datasource
     uid: PYROSCOPE_DS
     access: proxy
     url: http://pyroscope:4040

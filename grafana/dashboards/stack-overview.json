@@ -43,8 +43,8 @@
       "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
       "targets": [
         {
-          "expr": "sum by (endpoint) (rate(demo_app_requests_total[5m]))",
-          "legendFormat": "{{endpoint}}",
+          "expr": "sum by (route) (rate(demo_http_requests_total[5m]))",
+          "legendFormat": "{{route}}",
           "refId": "A"
         }
       ],
@@ -57,7 +57,7 @@
       "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
       "targets": [
         {
-          "expr": "demo_job_queue_depth",
+          "expr": "demo_job_queue_size",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
@@ -71,7 +71,7 @@
       "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
       "targets": [
         {
-          "expr": "sum(rate(demo_app_requests_total{status_code!~\"5..\"}[5m])) / sum(rate(demo_app_requests_total[5m])) * 100",
+          "expr": "sum(rate(demo_http_requests_total{status_code!~\"5..\"}[5m])) / sum(rate(demo_http_requests_total[5m])) * 100",
           "refId": "A"
         }
       ],
