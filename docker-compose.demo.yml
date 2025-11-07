@@ -15,7 +15,7 @@ services:
       - MONGO_DB_NAME=monitoring_demo
       - REDIS_URL=redis://redis:6379
       - LOG_LEVEL=info
-      - DEMO_ALLOW_FAILURES=false
+      - DEMO_ALLOW_FAILURES=true
     depends_on:
       - otel-collector
       - pyroscope
@@ -32,9 +32,12 @@ services:
     restart: unless-stopped
     depends_on:
       - demo-app
+      - nginx
     entrypoint: ["/bin/sh", "/scripts/demo_load.sh"]
     volumes:
       - ./scripts/demo_load.sh:/scripts/demo_load.sh:ro
+    environment:
+      - DEMO_LOAD_BASE_URL=http://nginx
     networks:
       - monitoring
 
@@ -54,6 +57,58 @@ services:
     container_name: demo_redis
     restart: unless-stopped
     command: ["redis-server", "--save", "", "--appendonly", "no"]
+    networks:
+      - monitoring
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.57.0
+    container_name: redis_exporter
+    restart: unless-stopped
+    environment:
+      - REDIS_ADDR=redis://demo_redis:6379
+    depends_on:
+      - redis
+    expose:
+      - "9121"
+    networks:
+      - monitoring
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.40.0
+    container_name: mongodb_exporter
+    restart: unless-stopped
+    environment:
+      - MONGODB_URI=mongodb://demo_mongo:27017
+    depends_on:
+      - mongo
+    expose:
+      - "9216"
+    networks:
+      - monitoring
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - demo-app
+    ports:
+      - "${NGINX_PORT:-18080}:80"
+    networks:
+      - monitoring
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:0.11.0
+    container_name: nginx_exporter
+    restart: unless-stopped
+    command:
+      - -nginx.scrape-uri=http://nginx/nginx_status
+    depends_on:
+      - nginx
+    expose:
+      - "9113"
     networks:
       - monitoring
 

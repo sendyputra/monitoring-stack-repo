@@ -57,3 +57,20 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ['otel_collector:8888']
+
+  - job_name: 'demo_node_app'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['demo_app:8000']
+
+  - job_name: 'redis_exporter'
+    static_configs:
+      - targets: ['redis_exporter:9121']
+
+  - job_name: 'mongodb_exporter'
+    static_configs:
+      - targets: ['mongodb_exporter:9216']
+
+  - job_name: 'nginx_exporter'
+    static_configs:
+      - targets: ['nginx_exporter:9113']

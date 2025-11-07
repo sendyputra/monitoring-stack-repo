@@ -5,3 +5,4 @@ prometheus_data/
 */__pycache__/
 .DS_Store
 .env
+demo-app/node_modules/

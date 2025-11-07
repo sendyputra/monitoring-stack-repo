@@ -20,7 +20,7 @@ Services:
 - Loki: http://<HOST>:${LOKI_PORT}
 - Alertmanager: http://<HOST>:${ALERTMANAGER_PORT}
 - Tempo UI / Trace API: http://<HOST>:${TEMPO_PORT}
-- Pyroscope: http://<HOST>:${PYROSCOPE_PORT}
+- Pyroscope: http://<HOST>:${PYROSCOPE_PORT} (view flamegraphs directly in Pyroscope UI)
 - Mimir (Prometheus-compatible API): http://<HOST>:${MIMIR_PORT}
 - OTLP Collector (gRPC ${OTELCOL_OTLP_GRPC_PORT}, HTTP ${OTELCOL_OTLP_HTTP_PORT}, metrics ${OTELCOL_METRICS_PORT})
 - Promtail (container + host logs → Loki)
@@ -47,6 +47,32 @@ Services:
 
 - **Stack Overview** (`grafana/dashboards/stack-overview.json`) — infrastructure + service SLO view with logs/traces links.
 - **Demo Service Deep Dive** (`grafana/dashboards/demo-service.json`) — queue depth, latency, error insight for the Node.js workload.
+
+### Manual verification checklist
+
+1. **Ensure services are running**
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.demo.yml ps
+   ```
+   Confirm `grafana`, `otel_collector`, `prometheus`, `tempo`, `loki`, `mimir`, `pyroscope`, and the demo services are all `Up`.
+
+2. **Generate telemetry load (optional but recommended)**
+   ```bash
+   DEMO_BASE_URL=http://localhost:18000 \
+   DEMO_SMOKE_ITERATIONS=25 \
+   DEMO_SMOKE_PAUSE_MS=250 \
+   npm --prefix demo-app run simulate
+   ```
+
+3. **Grafana UI** — open `http://localhost:${GRAFANA_PORT}` (default `3000`) and check:
+   - Dashboard **Stack Overview** shows host CPU/memory, request rate, job depth, logs pane, and Tempo trace search.
+   - Dashboard **Demo Service Deep Dive** shows request latency histograms, error counts, job durations, queue states, log stream, and slow traces.
+
+4. **Pyroscope UI** — open `http://localhost:${PYROSCOPE_PORT}` (default `4040`) to inspect live flamegraphs from `demo-node-app`.
+
+5. **Traces & logs** — from Grafana Explore you can:
+   - Query Tempo datasource for `service.name="demo-node-app"`.
+   - Query Loki datasource `{service="demo-node-app"}` to view structured logs.
 
 ## Local smoke test (optional)
 
