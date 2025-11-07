@@ -55,7 +55,6 @@ Core (folder **Root**):
 Imported (folder **imported/** — automatically provisioned):
 - **Pino HTTP Logs** (`grafana/dashboards/imported/pino-http-logs.json`, Grafana ID 21900) — live Loki queries over `pino` JSON logs with filters for service / level / status codes.
 - **Node Exporter Full** (`grafana/dashboards/imported/node-exporter-full.json`, ID 1860) — detailed host metrics from `node-exporter` + `cadvisor`.
-- **Loki Stack Monitoring** (`grafana/dashboards/imported/loki-stack-monitoring.json`, ID 14055) — health of Loki + Promtail pipelines.
 - **Redis Exporter** (`grafana/dashboards/imported/redis-dashboard.json`, ID 11835) — Redis cache activity via `redis_exporter`.
 - **MongoDB Overview** (`grafana/dashboards/imported/mongodb-overview.json`, ID 2583) — MongoDB storage + ops from `mongodb-exporter`.
 - **NodeJS Application** (`grafana/dashboards/imported/nodejs-application.json`, ID 11159) — process/runtime stats from Prometheus default metrics (via `prom-client`).
