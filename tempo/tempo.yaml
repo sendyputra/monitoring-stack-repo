@@ -1,57 +1,51 @@
-auth_enabled: false
+stream_over_http_enabled: true
 
 server:
   http_listen_port: 3200
-  http_listen_address: 0.0.0.0
-  grpc_listen_port: 9095
+  log_level: info
 
 distributor:
   receivers:
     otlp:
       protocols:
         grpc:
-          endpoint: 0.0.0.0:4317
+          endpoint: tempo:4317
         http:
-          endpoint: 0.0.0.0:4318
+          endpoint: tempo:4318
 
 ingester:
-  lifecycler:
-    address: 127.0.0.1
-    ring:
-      kvstore:
-        store: inmemory
-      replication_factor: 1
-  wal:
-    enabled: true
-    dir: /var/tempo/wal
+  max_block_duration: 5m
 
 compactor:
-  working_directory: /var/tempo/compactor
   compaction:
-    block_retention: 168h
+    block_retention: 720h
 
 metrics_generator:
-  processor:
-    service_graphs:
-      wait: 5s
-      max_items: 100000
-    span_metrics:
-      dimensions:
-        - service.name
-        - span.name
+  registry:
+    external_labels:
+      source: tempo
   storage:
-    path: /var/tempo/generator
-
-querier:
-  max_concurrent_queries: 4
-
-query_frontend:
-  search:
-    default_result_limit: 20
-    max_duration: 4h
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+  traces_storage:
+    path: /var/tempo/generator/traces
+  processor:
+    local_blocks:
+      filter_server_spans: false
+      flush_to_storage: true
 
 storage:
   trace:
-    backend: filesystem
-    filesystem:
-      dir: /var/tempo/traces
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs, span-metrics, local-blocks]
+      generate_native_histograms: both

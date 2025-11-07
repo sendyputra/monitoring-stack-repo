@@ -1,54 +1,44 @@
-auth_enabled: false
+multitenancy_enabled: false
 
 server:
   http_listen_port: 9009
+  grpc_server_max_recv_msg_size: 104857600
+  grpc_server_max_send_msg_size: 104857600
+  grpc_server_max_concurrent_streams: 1000
 
-common:
-  path_prefix: /mimir
-  storage:
-    backend: filesystem
-    filesystem:
-      dir: /mimir/storage
-  replication_factor: 1
+distributor:
   ring:
-    instance_addr: 127.0.0.1
+    kvstore:
+      store: memberlist
+  pool:
+    health_check_ingesters: true
+
+ingester:
+  ring:
     kvstore:
       store: inmemory
+    replication_factor: 1
+    min_ready_duration: 0s
+    final_sleep: 0s
+    num_tokens: 512
 
 memberlist:
+  abort_if_cluster_join_fails: false
   join_members: []
 
 blocks_storage:
   backend: filesystem
+  tsdb:
+    dir: /mimir/tsdb
+  bucket_store:
+    sync_dir: /mimir/tsdb-sync
   filesystem:
     dir: /mimir/blocks
-  bucket_store:
-    sync_dir: /mimir/boltdb-cache
+
+compactor:
+  data_dir: /mimir/compactor
 
 ruler_storage:
-  backend: filesystem
-  filesystem:
-    dir: /mimir/rules
-
-ruler:
-  alertmanager_url: http://alertmanager:9093
-
-alertmanager:
-  enable_api: true
-
-ingester:
-  lifecycler:
-    ring:
-      replication_factor: 1
-  wal:
-    enabled: true
-    dir: /mimir/wal
-
-runtime_config:
-  file: ""
-
-limits_config:
-  max_global_series_per_user: 0
-  max_series_per_user: 0
-  reject_old_samples: true
-  reject_old_samples_max_age: 120h
+  backend: local
+  local:
+    directory: /mimir/rules

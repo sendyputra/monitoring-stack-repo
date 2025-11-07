@@ -91,7 +91,7 @@ services:
       - monitoring
 
   mimir:
-    image: grafana/mimir:latest
+    image: grafana/mimir:2.9.0
     container_name: mimir
     restart: unless-stopped
     command:
@@ -115,8 +115,6 @@ services:
       - tempo_data:/var/tempo
     ports:
       - "${TEMPO_PORT}:3200"
-      - "${TEMPO_OTLP_GRPC_PORT}:4317"
-      - "${TEMPO_OTLP_HTTP_PORT}:4318"
     networks:
       - monitoring
 
@@ -135,50 +133,35 @@ services:
     networks:
       - monitoring
 
-  alloy:
-    image: grafana/alloy:latest
-    container_name: alloy
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
     restart: unless-stopped
-    command:
-      - run
-      - /etc/alloy/config.alloy
-    depends_on:
-      - prometheus
-      - loki
-      - mimir
-      - tempo
-      - pyroscope
-    environment:
-      - GRAFANA_METRICS_USER=${GRAFANA_ADMIN_USER}
-      - GRAFANA_METRICS_PASS=${GRAFANA_ADMIN_PASSWORD}
-    ports:
-      - "${ALLOY_PORT}:12345"
+    command: -config.file=/etc/promtail/promtail-config.yaml
     volumes:
-      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
     networks:
       - monitoring
 
-  beyla:
-    image: grafana/beyla:latest
-    container_name: beyla
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.98.0
+    container_name: otel_collector
     restart: unless-stopped
-    privileged: true
-    pid: "host"
+    command:
+      - --config=/etc/otelcol/config.yaml
     depends_on:
-      - alloy
-    environment:
-      - BEYLA_CONFIG=/etc/beyla/config.yml
+      - prometheus
+      - mimir
+      - tempo
+      - loki
     volumes:
-      - ./beyla/config.yml:/etc/beyla/config.yml:ro
-      - /var/run:/var/run
-      - /sys/kernel/debug:/sys/kernel/debug
-      - /sys/fs/bpf:/sys/fs/bpf
-      - /lib/modules:/lib/modules:ro
-      - /usr/src:/usr/src:ro
-      - /etc:/etc:ro
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "${OTELCOL_OTLP_GRPC_PORT}:4317"
+      - "${OTELCOL_OTLP_HTTP_PORT}:4318"
+      - "${OTELCOL_METRICS_PORT}:8888"
     networks:
       - monitoring
 
@@ -206,5 +189,6 @@ services:
       - mimir
       - tempo
       - pyroscope
+      - otel-collector
     networks:
       - monitoring

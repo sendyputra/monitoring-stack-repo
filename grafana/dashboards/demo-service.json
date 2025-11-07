@@ -1,0 +1,99 @@
+{
+  "id": null,
+  "uid": "demo-service",
+  "title": "Demo Service Deep Dive",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Latency (s)",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(demo_app_request_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(demo_app_request_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 3 }, "overrides": [] }
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors by Scope",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "sum by (scope) (rate(demo_errors_total[5m]))",
+          "legendFormat": "{{scope}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "type": "timeseries",
+      "title": "Job Duration (ms)",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 7 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "avg by (task) (demo_job_duration_ms)",
+          "legendFormat": "{{task}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] }
+    },
+    {
+      "type": "timeseries",
+      "title": "Queue States",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 7 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "demo_job_queue_depth",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+    },
+    {
+      "type": "logs",
+      "title": "Errors",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "loki", "uid": "LOKI_DS" },
+      "targets": [
+        {
+          "expr": "{service=\"demo-node-app\", level=~\"(err|error|fatal)\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "trace",
+      "title": "Slow Traces",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "tempo", "uid": "TEMPO_DS" },
+      "targets": [
+        {
+          "queryType": "traceSearch",
+          "refId": "A",
+          "query": "{\"service.name\":\"demo-node-app\",\"durationMs\":\">300\"}"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": []
+  }
+}

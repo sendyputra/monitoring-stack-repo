@@ -1,0 +1,131 @@
+{
+  "id": null,
+  "uid": "stack-overview",
+  "title": "Stack Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "style": "dark",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Host CPU Usage (%)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "avg by (instance) ((1 - avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m]))) * 100)",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 }, "overrides": [] }
+    },
+    {
+      "type": "timeseries",
+      "title": "Host Memory Available (%)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "avg by (instance) (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100)",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 }, "overrides": [] }
+    },
+    {
+      "type": "timeseries",
+      "title": "Demo Service Request Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "sum by (endpoint) (rate(demo_app_requests_total[5m]))",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "type": "timeseries",
+      "title": "BullMQ Depth",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "demo_job_queue_depth",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+    },
+    {
+      "type": "stat",
+      "title": "HTTP Success %",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "sum(rate(demo_app_requests_total{status_code!~\"5..\"}[5m])) / sum(rate(demo_app_requests_total[5m])) * 100",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 }, "overrides": [] }
+    },
+    {
+      "type": "stat",
+      "title": "Job Failures / min",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS_DS" },
+      "targets": [
+        {
+          "expr": "sum(rate(demo_errors_total{scope=\"worker\"}[5m])) * 60",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 2 }, "overrides": [] }
+    },
+    {
+      "type": "logs",
+      "title": "Demo Service Logs",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "loki", "uid": "LOKI_DS" },
+      "targets": [
+        {
+          "expr": "{service=\"demo-node-app\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "trace",
+      "title": "Recent Traces",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 22 },
+      "datasource": { "type": "tempo", "uid": "TEMPO_DS" },
+      "targets": [
+        {
+          "queryType": "traceSearch",
+          "refId": "A",
+          "query": "{\"service.name\":\"demo-node-app\"}"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "title": "Pyroscope",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 26 },
+      "options": {
+        "mode": "markdown",
+        "content": "View flamegraphs in [Pyroscope](http://pyroscope:4040)."
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  }
+}

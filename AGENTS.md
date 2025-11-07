@@ -1,15 +1,15 @@
 # Coding Agent Playbook
 
 ## Repository Focus
-- This stack runs Grafana, Prometheus, Loki, Tempo, Pyroscope, Mimir, Alloy, and Beyla via Docker Compose.
+- This stack runs Grafana, Prometheus, Loki, Tempo, Pyroscope, Mimir, the OpenTelemetry Collector, and supporting agents (Node Exporter, cAdvisor, Promtail) via Docker Compose.
 - Core configs live in:
   - `docker-compose.yml` for service wiring, networks, and volumes.
   - `prometheus/prometheus.yml` for scrape targets and remote write.
   - `grafana/provisioning/datasources/datasources.yml` for data sources.
-  - `alloy/config.alloy`, `tempo/tempo.yaml`, `mimir/mimir.yaml`, `pyroscope/config.yaml`, and `beyla/config.yml` for observability backends.
-- Legacy Promtail config is kept only as reference; Alloy is the active collector.
+  - `otel-collector/config.yaml`, `tempo/tempo.yaml`, `mimir/mimir.yaml`, `pyroscope/config.yaml`, and `promtail/promtail-config.yaml` for observability backends.
+- Promtail ships host and container logs to Loki; the OpenTelemetry Collector handles OTLP traffic from services.
 - `demo-app/` contains the Node.js Express/BullMQ demo service used by the local smoke test overlay.
-  - `npm run simulate` (via `scripts/smoke.js`) drives a smoke scenario; tune with env vars (`DEMO_SMOKE_ITERATIONS`, `DEMO_SMOKE_PAUSE_MS`, etc.).
+  - `npm run simulate` (via `scripts/smoke.js`) drives a smoke scenario; tune with env vars (`DEMO_SMOKE_ITERATIONS`, `DEMO_SMOKE_PAUSE_MS`, `DEMO_BASE_URL`, etc.).
 
 ## Workflow Expectations
 - Keep commits small and focused on one logical change. Use clear, descriptive messages.

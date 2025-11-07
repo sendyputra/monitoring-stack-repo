@@ -65,6 +65,8 @@ cpuGauge.addCallback((observableResult) => {
   observableResult.observe(usage.user / 1_000_000, { mode: 'user' });
 });
 
+const allowRandomFailures = (process.env.DEMO_ALLOW_FAILURES || '').toLowerCase() === 'true';
+
 const app = express();
 app.use(express.json());
 
@@ -206,7 +208,7 @@ async function simulateWork(task) {
         total += Math.sqrt(i + Math.random());
       }
 
-      if (Math.random() < 0.15) {
+      if (allowRandomFailures && Math.random() < 0.15) {
         const error = new Error('Randomised worker failure');
         errorCounter.add(1, { scope: 'worker', task });
         throw error;

@@ -13,7 +13,7 @@ const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumenta
 
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.ERROR);
 
-const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'alloy:4317';
+const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://otel-collector:4317';
 
 const traceExporter = new OTLPTraceExporter({ url: otlpEndpoint });
 const metricReader = new PeriodicExportingMetricReader({
