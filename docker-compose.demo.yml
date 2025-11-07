@@ -74,11 +74,13 @@ services:
       - monitoring
 
   mongodb-exporter:
-    image: percona/mongodb_exporter:0.40.0
+    build:
+      context: ./mongo-exporter
     container_name: mongodb_exporter
     restart: unless-stopped
     environment:
-      - MONGODB_URI=mongodb://demo_mongo:27017
+      - MONGO_URL=mongodb://demo_mongo:27017
+      - MONGO_SCRAPE_INTERVAL_MS=5000
     depends_on:
       - mongo
     expose:

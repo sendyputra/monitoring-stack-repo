@@ -11,7 +11,9 @@
 - `demo-app/` contains the Node.js Express/BullMQ demo service used by the local smoke test overlay.
   - `npm run simulate` (via `scripts/smoke.js`) drives a smoke scenario; tune with env vars (`DEMO_SMOKE_ITERATIONS`, `DEMO_SMOKE_PAUSE_MS`, `DEMO_BASE_URL`, etc.).
 - The demo overlay (`docker-compose.demo.yml`) also spins up MongoDB/Redis, their exporters, an Nginx gateway + exporter (exposed on `${NGINX_PORT:-18080}`), and the `demo-load` generator that hammers the proxy so dashboards have traffic.
+- `mongo-exporter/` houses the custom Node-based MongoDB metrics exporter that feeds the imported MongoDB dashboard.
 - Grafana auto-loads JSON dashboards from `grafana/dashboards` (core) and `grafana/dashboards/imported` (Pino HTTP logs, Node Exporter Full, Loki stack, Redis, MongoDB, NodeJS Runtime, Nginx). Keep datasource UIDs (`PROMETHEUS_DS`, `LOKI_DS`, `TEMPO_DS`, `PYROSCOPE_DS`) consistent when editing.
+- `TODO.md` captures the current user-requested fixes with status + report; keep it in sync when you complete tasks referenced in README.md.
 
 ## Workflow Expectations
 - Keep commits small and focused on one logical change. Use clear, descriptive messages.

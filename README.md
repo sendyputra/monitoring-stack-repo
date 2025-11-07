@@ -41,6 +41,8 @@ Services:
 - `grafana/provisioning/*` — auto-provision Prometheus & Loki datasources and dashboards
 - `alertmanager/alertmanager.yml` — minimal route/receiver (extend as needed)
 - `scripts/deploy_stack.sh` — SSH deploy helper
+- `mongo-exporter/` — lightweight MongoDB → Prometheus exporter used by the demo overlay
+- `TODO.md` — live checklist/report for the actively requested fixes (linked from AGENTS.md)
 
 > **Note:** Promtail now ships system & container logs directly to Loki; application telemetry uses the OpenTelemetry Collector.
 
@@ -109,7 +111,7 @@ docker compose -f docker-compose.yml -f docker-compose.demo.yml run --rm \
 Included demo components (`docker-compose.demo.yml`):
 - `demo-app` — Node.js (Express) service with MongoDB + Redis + BullMQ, instrumented for traces, metrics, logs (exposed on port 18000)
 - `nginx` + `nginx-exporter` — reverse proxy in front of `demo-app` (port `${NGINX_PORT:-18080}`) with metrics scraped by Prometheus.
-- `redis-exporter` + `mongodb-exporter` — surface storage metrics for Redis/Mongo dashboards.
+- `redis-exporter` + `mongodb-exporter` — Redis exporter plus the custom Node-based Mongo Prometheus bridge in `mongo-exporter/`.
 - `demo-load` — curl-based traffic generator that now targets `nginx` to exercise proxy + exporter metrics.
 - Pyroscope data is produced directly by `demo-app` via the Pyroscope SDK
 - `mongo` & `redis` — backing data stores used by the demo service (ephemeral volumes)
