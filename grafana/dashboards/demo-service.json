@@ -24,7 +24,10 @@
           "legendFormat": "p50"
         }
       ],
-      "fieldConfig": { "defaults": { "unit": "s", "decimals": 3 }, "overrides": [] }
+      "fieldConfig": {
+        "defaults": { "unit": "s", "decimals": 3 },
+        "overrides": []
+      }
     },
     {
       "id": 2,
@@ -134,7 +137,10 @@
           "legendFormat": "req/s"
         }
       ],
-      "fieldConfig": { "defaults": { "unit": "req/s", "decimals": 2 }, "overrides": [] }
+      "fieldConfig": {
+        "defaults": { "unit": "req/s", "decimals": 2 },
+        "overrides": []
+      }
     },
     {
       "id": 9,
@@ -169,7 +175,10 @@
           "legendFormat": "user"
         }
       ],
-      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 2 }, "overrides": [] }
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "decimals": 2 },
+        "overrides": []
+      }
     },
     {
       "id": 11,
@@ -179,7 +188,7 @@
       "gridPos": { "h": 10, "w": 12, "x": 0, "y": 24 },
       "targets": [
         {
-          "expr": "{service=~\"demo-node-app\"} |= \"request completed\"",
+          "expr": "{service_name=\"demo/demo-node-app\"} |= \"request completed\" != \"\\/metrics\"",
           "refId": "A"
         }
       ]

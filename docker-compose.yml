@@ -11,9 +11,9 @@ volumes:
   tempo_data:
   mimir_data:
   pyroscope_data:
+  promtail_data:
 
 services:
-
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node_exporter
@@ -141,6 +141,7 @@ services:
     volumes:
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - promtail_data:/var/lib/promtail
       - ./promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
     networks:
       - monitoring
